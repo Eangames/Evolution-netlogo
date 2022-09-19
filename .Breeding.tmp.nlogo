@@ -4,15 +4,8 @@ globals [
 breed [
   humans a-person
 ]
-
-turtles-own [
-  energy
-]
-
-patches-own [
-  cooldown
-  hasFruit
-]
+breed [
+  fruits fruit
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
