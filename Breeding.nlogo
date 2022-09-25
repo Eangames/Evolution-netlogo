@@ -1,8 +1,13 @@
 globals [
+  initial-population
+  birth-rate
+  death-rate
+
+  population-count
 ]
 
 breed [
-  humans a-person
+  humans human
 ]
 
 turtles-own [
@@ -13,6 +18,50 @@ patches-own [
   cooldown
   hasFruit
 ]
+
+to setup
+  clear-all
+  set birth-rate starting-birth-rate
+  set death-rate starting-death-rate
+  set initial-population starting-population
+  create-population
+  reset-ticks
+end
+
+to create-population
+  create-humans initial-population
+  [
+    setxy random-pxcor random-pycor
+    set shape "face happy"
+    set color gray
+    set energy starting-energy
+  ]
+end
+
+to go
+  set population-count count turtles
+  if count turtles = 0 [ stop ]
+  ask turtles [
+    move-population
+    kill-population
+    reproduce-population
+  ]
+  tick
+end
+
+to move-population
+  rt random 50
+  lt random 50
+  fd (0.2 * energy + 0.5)
+  set energy (energy - (1))
+end
+
+to kill-population
+  if energy <= 0 [ die ]
+end
+
+to reproduce-population
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -35,11 +84,116 @@ GRAPHICS-WINDOW
 16
 -16
 16
-0
-0
+1
+1
 1
 ticks
 30.0
+
+SLIDER
+8
+10
+180
+43
+starting-population
+starting-population
+2
+1000
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+8
+49
+180
+82
+starting-birth-rate
+starting-birth-rate
+0
+1
+0.1
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+8
+86
+180
+119
+starting-death-rate
+starting-death-rate
+0
+1
+0.1
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+8
+125
+180
+158
+starting-energy
+starting-energy
+0
+100
+1.0
+1
+1
+NIL
+HORIZONTAL
+
+BUTTON
+15
+164
+78
+197
+NIL
+setup
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+107
+165
+170
+198
+NIL
+go
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+0
+
+MONITOR
+10
+204
+81
+249
+Population
+population-count
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
