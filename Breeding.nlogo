@@ -4,19 +4,32 @@ globals [
   death-rate
 
   population-count
+  food-count
+
+  food-xs
+  food-ys
+  x
 ]
 
 breed [
   humans human
 ]
 
-turtles-own [
-  energy
+breed [
+  foods food
 ]
 
-patches-own [
-  cooldown
-  hasFruit
+humans-own [
+  energy
+  distance-x
+  distance-y
+  bistance-xy
+  _range
+  i
+]
+
+foods-own [
+  id
 ]
 
 to setup
@@ -25,6 +38,7 @@ to setup
   set death-rate starting-death-rate
   set initial-population starting-population
   create-population
+  create-food
   reset-ticks
 end
 
@@ -34,15 +48,35 @@ to create-population
     setxy random-pxcor random-pycor
     set shape "face happy"
     set color gray
+    set _range starting-range
     set energy starting-energy
+  ]
+end
+
+to create-food
+  set x 0
+  while [x < starting-food] [
+    create-foods 1
+    [
+      setxy random-pxcor random-pycor
+      set shape "apple"
+      set color red
+      set id x
+    ]
+    set x (x + 1)
   ]
 end
 
 to go
   set population-count count turtles
   if count turtles = 0 [ stop ]
-  ask turtles [
+  ask foods [
+    set food-xs[ id ] xcor
+    set food-ys[ id ] ycor
+  ]
+  ask humans [
     move-population
+    eat-fruit
     kill-population
     reproduce-population
   ]
@@ -52,8 +86,22 @@ end
 to move-population
   rt random 50
   lt random 50
-  fd (0.2 * energy + 0.5)
-  set energy (energy - (1))
+  fd (log (energy + 3) 20)
+  set energy (energy - log (energy + 3 ) 20)
+end
+
+to eat-fruit
+  set i 0
+  while [i < food-count] [
+    set distance-x (food-xs[i] - xcor)
+    set distance-y (food-ys[i] - ycor)
+    set distance-xy sqrt ((distance-x * distance-x) + (distance-y * distance-y))
+    if (distance-xy < _range) [
+      set target-food i
+      set i food-count
+    ]
+    set i (i + 1)
+  ]
 end
 
 to kill-population
@@ -144,7 +192,7 @@ starting-energy
 starting-energy
 0
 100
-1.0
+76.0
 1
 1
 NIL
@@ -195,6 +243,51 @@ population-count
 1
 11
 
+SLIDER
+25
+400
+197
+433
+starting-food
+starting-food
+0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+23
+484
+195
+517
+energy-from-food
+energy-from-food
+0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+139
+580
+311
+613
+starting-range
+starting-range
+0
+100
+50.0
+1
+1
+NIL
+HORIZONTAL
+
 @#$#@#$#@
 ## WHAT IS IT?
 
@@ -241,6 +334,15 @@ airplane
 true
 0
 Polygon -7500403 true true 150 0 135 15 120 60 120 105 15 165 15 195 120 180 135 240 105 270 120 285 150 270 180 285 210 270 165 240 180 180 285 195 285 165 180 105 180 60 165 15
+
+apple
+false
+0
+Polygon -7500403 true true 33 58 0 150 30 240 105 285 135 285 150 270 165 285 195 285 255 255 300 150 268 62 226 43 194 36 148 32 105 35
+Line -16777216 false 106 55 151 62
+Line -16777216 false 157 62 209 57
+Polygon -6459832 true false 152 62 158 62 160 46 156 30 147 18 132 26 142 35 148 46
+Polygon -16777216 false false 132 25 144 38 147 48 151 62 158 63 159 47 155 30 147 18
 
 arrow
 true
