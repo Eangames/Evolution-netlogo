@@ -42,7 +42,7 @@ to create-population
   create-humans initial-population
   [
     setxy random-xcor random-ycor
-    set shape "sheep"
+    set shape "face happy"
     set color blue
     set energy starting-energy
   ]
@@ -147,7 +147,7 @@ to reproduce-population
     hatch 1 [
       rt random-float 360
       fd 1
-      set shape "sheep"
+      set shape "face happy"
       set color blue
       set energy starting-energy
     ]
