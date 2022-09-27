@@ -1,168 +1,36 @@
-globals [
-  initial-population
-  birth-rate
-  death-rate
-
-  population-count
-  food-count
-
-  recurring
-
-  sum-movement-speed
-  average-movement-speed
-]
-
-breed [
-  humans human
-]
-
-breed [
-  foods food
-]
-
-humans-own [
-  energy
-]
-
-foods-own [
-]
+globals [n smoothed]
 
 to setup
   clear-all
-  set birth-rate starting-birth-rate
-  set death-rate starting-death-rate
-  set initial-population starting-population
-  create-population
-  create-food
-  create-world
+  set n 0
+  set smoothed 0
   reset-ticks
 end
 
-to create-population
-  create-humans initial-population
-  [
-    setxy random-xcor random-ycor
-    set shape "face happy"
-    set color blue
-    set energy starting-energy
-  ]
-end
-
-to create-food
-  create-foods starting-food
-  [
-    setxy random-xcor random-ycor
-    set shape "apple"
-    set color red
-  ]
-end
-
-to create-one-food
-  create-foods 1
-  [
-    setxy random-xcor random-ycor
-    set shape "apple"
-    set color red
-  ]
-end
-
-to create-world
-  ask patches [
-    set pcolor green
-  ]
-  place-mountains
-end
-
-to place-mountains
-  ask patches [
-    if random 100 < 4 [ ; 4 -> slider
-      set pcolor gray
-      set recurring 0
-      recurrent
-    ]
-  ]
-end
-
-to recurrent
-  ask neighbors [
-    if random 100 < 50 [
-      set pcolor gray
-      if recurring < 2 [ ; 2 -> slider
-        set recurring recurring + 1
-        recurrent
-      ]
-    ]
-  ]
-  set recurring recurring + 1
-end
-
 to go
-  set sum-movement-speed 0
-  if count humans = 0 [ stop ]
-  if food-count < starting-food and random 100 < 75 [ ; 75 -> slider
-    create-one-food
-  ]
-  ask humans [
-    move-population
-    eat-fruit
-    set average-movement-speed precision (sum-movement-speed / count humans) 1
-    kill-population
-    reproduce-population
-  ]
-  set population-count count humans
-  set food-count count foods
+  ;; the variable N does a random walk
+  set n n + one-of [-1 0 1]
+
   tick
+
+  ;; Here's where we calculate the smoothed version of N.
+  ;; This one line is the heart of the whole example.
+  set smoothed smoothness * smoothed + (1 - smoothness) * n
 end
 
-to move-population
-  if random 100 < 90 [ ; 90 -> slider
-    rt random 50
-    lt random 50
-    if pcolor = gray [
-      set sum-movement-speed sum-movement-speed + (log (energy + 3) 20) / 2
-      fd (log (energy + 3) 20) / 2
-    ]
-    if pcolor != gray [
-      set sum-movement-speed sum-movement-speed + (log (energy + 3) 20)
-      fd (log (energy + 3) 20)
-    ]
-    set energy (energy - log (energy + 3 ) 20)
-  ]
-end
 
-to eat-fruit
-  let foodtoeat one-of foods-here
-  if foodtoeat != nobody [
-    ask foodtoeat [ die ]
-    set energy energy + energy-from-food
-  ]
-end
-
-to kill-population
-  if energy <= 0 [ die ]
-end
-
-to reproduce-population
-  if energy >= 50 and random 100 < 1 [ ; 1 -> slider
-    hatch 1 [
-      rt random-float 360
-      fd 1
-      set shape "face happy"
-      set color blue
-      set energy starting-energy
-    ]
-    set energy energy - 50
-  ]
-end
+; Public Domain:
+; To the extent possible under law, Uri Wilensky has waived all
+; copyright and related or neighboring rights to this model.
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
-10
-647
-448
+374
+28
+697
+46
 -1
 -1
-13.0
+9.0
 1
 10
 1
@@ -172,81 +40,21 @@ GRAPHICS-WINDOW
 1
 1
 1
--16
-16
--16
-16
+-17
+17
+0
+0
 1
 1
 1
 ticks
 30.0
 
-SLIDER
-8
-10
-180
-43
-starting-population
-starting-population
-2
-1000
-50.0
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-8
-49
-180
-82
-starting-birth-rate
-starting-birth-rate
-0
-1
-0.1
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-8
-86
-180
-119
-starting-death-rate
-starting-death-rate
-0
-1
-0.1
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-8
-125
-180
-158
-starting-energy
-starting-energy
-0
-200
-200.0
-1
-1
-NIL
-HORIZONTAL
-
 BUTTON
-15
-164
-78
-197
+66
+17
+132
+50
 NIL
 setup
 NIL
@@ -260,13 +68,13 @@ NIL
 1
 
 BUTTON
-107
-165
-170
-198
+137
+17
+271
+50
 NIL
-go
-T
+repeat 500 [ go ]
+NIL
 1
 T
 OBSERVER
@@ -276,131 +84,57 @@ NIL
 NIL
 0
 
-MONITOR
-10
-204
-81
-249
-Population
-population-count
-17
-1
-11
+PLOT
+16
+91
+731
+371
+Plot
+NIL
+NIL
+0.0
+500.0
+-20.0
+-20.0
+true
+false
+"" ""
+PENS
+"smoothed n" 1.0 0 -13345367 true "" "plot smoothed"
 
 SLIDER
-25
-400
-197
-433
-starting-food
-starting-food
+17
+56
+299
+89
+smoothness
+smoothness
 0
-100
-50.0
-1
+1.0
+0.5
+0.01
 1
 NIL
 HORIZONTAL
-
-SLIDER
-23
-484
-195
-517
-energy-from-food
-energy-from-food
-0
-100
-50.0
-1
-1
-NIL
-HORIZONTAL
-
-MONITOR
-107
-205
-164
-250
-Food
-food-count
-17
-1
-11
-
-PLOT
-658
-10
-928
-241
-Ecosystem
-time
-amount
-0.0
-10.0
-0.0
-10.0
-true
-true
-"" ""
-PENS
-"Humans" 1.0 0 -16777216 true "" "plot count humans"
-"Food" 1.0 0 -7500403 true "" "plot count foods"
-
-PLOT
-659
-248
-927
-450
-Average Movement Speed
-speed
-time
-0.0
-10.0
-0.0
-10.0
-true
-true
-"" ""
-PENS
-"A.M.S x 10" 1.0 0 -16777216 true "" "plot average-movement-speed * 10"
 
 @#$#@#$#@
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
+This code example shows you how to plot a "smoothed" version of a jagged line.  When you run the model, the black line is the original line, and the blue line is the smoothed version.
 
-## HOW IT WORKS
+The amount of smoothing is controlled by the SMOOTHNESS slider.
 
-(what rules the agents use to create the overall behavior of the model)
-
-## HOW TO USE IT
-
-(how to use the model, including a description of each of the items in the Interface tab)
+The black line is generated by doing a one-dimensional random walk.
 
 ## THINGS TO NOTICE
 
-(suggested things for the user to notice while running the model)
-
-## THINGS TO TRY
-
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
-
-## EXTENDING THE MODEL
-
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
-
-## NETLOGO FEATURES
-
-(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
-
-## RELATED MODELS
-
-(models in the NetLogo Models Library and elsewhere which are of related interest)
+The very simple method used to do smoothing causes the smoothed line to lag a bit behind the original line, that is, it appear shifted to the right.
 
 ## CREDITS AND REFERENCES
 
-(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
+Thanks to Ed Hazzard for suggesting this example.
+
+<!-- 2004 -->
 @#$#@#$#@
 default
 true
@@ -411,15 +145,6 @@ airplane
 true
 0
 Polygon -7500403 true true 150 0 135 15 120 60 120 105 15 165 15 195 120 180 135 240 105 270 120 285 150 270 180 285 210 270 165 240 180 180 285 195 285 165 180 105 180 60 165 15
-
-apple
-false
-0
-Polygon -7500403 true true 33 58 0 150 30 240 105 285 135 285 150 270 165 285 195 285 255 255 300 150 268 62 226 43 194 36 148 32 105 35
-Line -16777216 false 106 55 151 62
-Line -16777216 false 157 62 209 57
-Polygon -6459832 true false 152 62 158 62 160 46 156 30 147 18 132 26 142 35 148 46
-Polygon -16777216 false false 132 25 144 38 147 48 151 62 158 63 159 47 155 30 147 18
 
 arrow
 true
@@ -603,22 +328,6 @@ Polygon -7500403 true true 135 105 90 60 45 45 75 105 135 135
 Polygon -7500403 true true 165 105 165 135 225 105 255 45 210 60
 Polygon -7500403 true true 135 90 120 45 150 15 180 45 165 90
 
-sheep
-false
-15
-Circle -1 true true 203 65 88
-Circle -1 true true 70 65 162
-Circle -1 true true 150 105 120
-Polygon -7500403 true false 218 120 240 165 255 165 278 120
-Circle -7500403 true false 214 72 67
-Rectangle -1 true true 164 223 179 298
-Polygon -1 true true 45 285 30 285 30 240 15 195 45 210
-Circle -1 true true 3 83 150
-Rectangle -1 true true 65 221 80 296
-Polygon -1 true true 195 285 210 285 210 240 240 210 195 210
-Polygon -7500403 true false 276 85 285 105 302 99 294 83
-Polygon -7500403 true false 219 85 210 105 193 99 201 83
-
 square
 false
 0
@@ -703,13 +412,6 @@ Line -7500403 true 40 84 269 221
 Line -7500403 true 40 216 269 79
 Line -7500403 true 84 40 221 269
 
-wolf
-false
-0
-Polygon -16777216 true false 253 133 245 131 245 133
-Polygon -7500403 true true 2 194 13 197 30 191 38 193 38 205 20 226 20 257 27 265 38 266 40 260 31 253 31 230 60 206 68 198 75 209 66 228 65 243 82 261 84 268 100 267 103 261 77 239 79 231 100 207 98 196 119 201 143 202 160 195 166 210 172 213 173 238 167 251 160 248 154 265 169 264 178 247 186 240 198 260 200 271 217 271 219 262 207 258 195 230 192 198 210 184 227 164 242 144 259 145 284 151 277 141 293 140 299 134 297 127 273 119 270 105
-Polygon -7500403 true true -1 195 14 180 36 166 40 153 53 140 82 131 134 133 159 126 188 115 227 108 236 102 238 98 268 86 269 92 281 87 269 103 269 113
-
 x
 false
 0
@@ -718,6 +420,7 @@ Polygon -7500403 true true 30 75 75 30 270 225 225 270
 @#$#@#$#@
 NetLogo 6.2.2
 @#$#@#$#@
+need-to-manually-make-preview-for-this-model
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@

@@ -2,6 +2,8 @@ globals [
   initial-population
   birth-rate
   death-rate
+  smooth-birth-rate
+  smooth-death-rate
 
   population-count
   food-count
@@ -10,6 +12,11 @@ globals [
 
   sum-movement-speed
   average-movement-speed
+  smooth-average-movement-speed
+  sum-energy-decrease
+  sum-energy-increase
+  average-energy-change
+  smooth-average-energy-change
 ]
 
 breed [
@@ -22,6 +29,7 @@ breed [
 
 humans-own [
   energy
+  indent?
 ]
 
 foods-own [
@@ -29,12 +37,12 @@ foods-own [
 
 to setup
   clear-all
-  set birth-rate starting-birth-rate
-  set death-rate starting-death-rate
   set initial-population starting-population
   create-population
   create-food
   create-world
+  set birth-rate 0
+  set death-rate 0
   reset-ticks
 end
 
@@ -45,6 +53,7 @@ to create-population
     set shape "sheep"
     set color blue
     set energy starting-energy
+    set sum-energy-increase sum-energy-increase + starting-energy
   ]
 end
 
@@ -57,8 +66,8 @@ to create-food
   ]
 end
 
-to create-one-food
-  create-foods 1
+to create-one-tenth-food
+  create-foods round (starting-food / 5) ; 5 -> slider
   [
     setxy random-xcor random-ycor
     set shape "apple"
@@ -97,21 +106,31 @@ to recurrent
 end
 
 to go
-  set sum-movement-speed 0
+  set population-count count humans
+  set birth-rate 0
+  set death-rate 0
   if count humans = 0 [ stop ]
   if food-count < starting-food and random 100 < 75 [ ; 75 -> slider
-    create-one-food
+    create-one-tenth-food
   ]
   ask humans [
+    set indent? false
     move-population
     eat-fruit
     set average-movement-speed precision (sum-movement-speed / count humans) 1
     kill-population
     reproduce-population
+    set average-energy-change precision ((sum-energy-increase + sum-energy-decrease) / count humans) 0
   ]
   set population-count count humans
   set food-count count foods
+  set smooth-birth-rate smoothness * smooth-birth-rate + (1 - smoothness) * birth-rate * 1000
+  set smooth-death-rate smoothness * smooth-death-rate + (1 - smoothness) * death-rate * 1000
+  set smooth-average-movement-speed smoothness * smooth-average-movement-speed + (1 - smoothness) * average-movement-speed * 10
   tick
+  set sum-movement-speed 0
+  set sum-energy-increase 0
+  set sum-energy-decrease 0
 end
 
 to move-population
@@ -121,11 +140,22 @@ to move-population
     if pcolor = gray [
       set sum-movement-speed sum-movement-speed + (log (energy + 3) 20) / 2
       fd (log (energy + 3) 20) / 2
+      if one-of foods-here != nobody and not indent? [
+        move-population
+        set indent? true
+        fd 0 - ((log (energy + 3) 20) / 2)
+      ]
     ]
     if pcolor != gray [
       set sum-movement-speed sum-movement-speed + (log (energy + 3) 20)
       fd (log (energy + 3) 20)
+      if one-of foods-here != nobody and not indent? [
+        fd 0 - (log (energy + 3) 20)
+        set indent? true
+        move-population
+      ]
     ]
+    set sum-energy-decrease sum-energy-decrease - (energy - log (energy + 3 ) 20)
     set energy (energy - log (energy + 3 ) 20)
   ]
 end
@@ -135,23 +165,30 @@ to eat-fruit
   if foodtoeat != nobody [
     ask foodtoeat [ die ]
     set energy energy + energy-from-food
+    set sum-energy-increase sum-energy-increase + energy-from-food
   ]
 end
 
 to kill-population
-  if energy <= 0 [ die ]
+  if energy <= 0 [
+    set death-rate death-rate + 1 / population-count
+    die
+  ]
 end
 
 to reproduce-population
   if energy >= 50 and random 100 < 1 [ ; 1 -> slider
+    set birth-rate birth-rate + 1 / population-count
     hatch 1 [
       rt random-float 360
       fd 1
       set shape "sheep"
       set color blue
       set energy starting-energy
+      set sum-energy-increase sum-energy-increase + starting-energy
     ]
-    set energy energy - 50
+    set energy energy - 50 ; 50 -> slider same as below
+    set sum-energy-decrease sum-energy-decrease - 50
   ]
 end
 @#$#@#$#@
@@ -191,38 +228,8 @@ starting-population
 starting-population
 2
 1000
-50.0
+1000.0
 1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-8
-49
-180
-82
-starting-birth-rate
-starting-birth-rate
-0
-1
-0.1
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-8
-86
-180
-119
-starting-death-rate
-starting-death-rate
-0
-1
-0.1
-0.01
 1
 NIL
 HORIZONTAL
@@ -288,40 +295,40 @@ population-count
 11
 
 SLIDER
-25
-400
-197
-433
+8
+45
+180
+78
 starting-food
 starting-food
 0
 100
-50.0
+100.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-23
-484
-195
-517
+8
+84
+180
+117
 energy-from-food
 energy-from-food
 0
 100
-50.0
+10.0
 1
 1
 NIL
 HORIZONTAL
 
 MONITOR
-107
-205
-164
-250
+15
+255
+72
+300
 Food
 food-count
 17
@@ -344,14 +351,14 @@ true
 true
 "" ""
 PENS
-"Humans" 1.0 0 -16777216 true "" "plot count humans"
-"Food" 1.0 0 -7500403 true "" "plot count foods"
+"Humans" 1.0 0 -2674135 true "" "plot count humans"
+"Food" 1.0 0 -13840069 true "" "plot count foods"
 
 PLOT
-659
-248
-927
-450
+933
+244
+1213
+449
 Average Movement Speed
 speed
 time
@@ -363,7 +370,76 @@ true
 true
 "" ""
 PENS
-"A.M.S x 10" 1.0 0 -16777216 true "" "plot average-movement-speed * 10"
+"A.M.S" 1.0 0 -955883 true "" "plot smooth-average-movement-speed"
+
+PLOT
+933
+10
+1214
+241
+Average Energy Change
+energy change
+time
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"A.E.C" 1.0 0 -14070903 true "" "plot average-energy-change"
+
+PLOT
+659
+245
+928
+449
+Birth/Death rate
+time
+percent of population
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"B-rate" 1.0 0 -13840069 true "" "plot smooth-birth-rate"
+"D-rate" 1.0 0 -2674135 true "" "plot smooth-death-rate"
+
+SLIDER
+1222
+10
+1394
+43
+smoothness
+smoothness
+0
+0.99
+0.99
+0.01
+1
+NIL
+HORIZONTAL
+
+BUTTON
+100
+205
+179
+238
+Go Once
+go
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+0
 
 @#$#@#$#@
 ## WHAT IS IT?
